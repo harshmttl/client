@@ -496,9 +496,9 @@ def preprocess_df_session_window(
     fennel_internal_ts_field = "__fennel_internal_ts_field__"
     fennel_internal_window_field = "__fennel_internal_window_field__"
 
-    # Getting all the unique sessions against all the keys
+    # Getting all the unique sessions against all the keys with timestamps and window field if required
     internal_df = (
-        input_df.copy()[key_fields_without_window + [ts_field]]
+        input_df.copy()[key_fields + [ts_field]]
         .drop_duplicates()
         .sort_values(by=ts_field)
         .reset_index(drop=True)
@@ -512,7 +512,7 @@ def preprocess_df_session_window(
     if is_window_key_field:
         internal_df[fennel_internal_window_field] = internal_df.groupby(
             key_fields_without_window
-        )[fennel_internal_window_field].shift(-1)
+        )[WINDOW_FIELD_NAME].shift(-1)
 
     # Remove nulls
     internal_df = internal_df[internal_df[fennel_internal_ts_field].notna()]
@@ -607,7 +607,7 @@ def preprocess_df(
     Preprocess the dataframe to add delete or inserts according to window type.
     """
     if window is None:
-        raise ValueError(f"Window not specified")
+        raise ValueError("Window not specified")
     if isinstance(window, Continuous):
         input_df = preprocess_df_continuous_window(input_df, window, ts_field)
     elif isinstance(window, (Hopping, Tumbling)):
